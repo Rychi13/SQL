@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>SQL Hacker Academy PRO</title>
+  <style>
+    :root{
+      --bg:#070b17; --bg2:#0c1633; --panel:#101b3a; --panel2:#0c1530;
+      --line:#2d468c; --text:#d9e6ff; --muted:#95aee5; --accent:#60a5fa;
+      --ok:#2dd4bf; --warn:#f59e0b; --bad:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;color:var(--text);font-family:ui-monospace,Menlo,Monaco,Consolas,monospace;
+      background:
+        radial-gradient(900px 500px at 10% -10%, #1a2f6f 0%, transparent 60%),
+        radial-gradient(900px 500px at 100% 0%, #10204e 0%, transparent 60%),
+        linear-gradient(180deg,var(--bg),#04070f);
+    }
+    .wrap{max-width:1250px;margin:0 auto;padding:16px}
+    .top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+    .title{font-size:1.2rem;font-weight:800;letter-spacing:.3px}
+    .stats{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{border:1px solid var(--line);background:var(--panel);padding:7px 11px;border-radius:999px;font-size:.86rem}
+    .layout{display:grid;grid-template-columns:320px 1fr 320px;gap:12px}
+    .card{
+      border:1px solid var(--line);border-radius:12px;padding:12px;
+      background:linear-gradient(180deg,var(--panel),var(--panel2));
+    }
+    h2,h3{margin:.2rem 0 .6rem}
+    p{color:var(--muted);margin:.35rem 0}
+    .missions{max-height:78vh;overflow:auto}
+    .mission{border:1px solid #274282;background:#0d1b3d;border-radius:10px;padding:9px;margin-bottom:8px;cursor:pointer}
+    .mission:hover{border-color:#4f79dd}
+    .mission.active{box-shadow:0 0 0 1px #6ea1ff inset}
+    .mission.locked{opacity:.45;cursor:not-allowed}
+    .row{display:flex;justify-content:space-between;gap:8px}
+    .tag{font-size:.72rem;border:1px solid #3a58a3;border-radius:999px;padding:2px 8px;color:#bbd0ff}
+    .small{font-size:.83rem;color:#9ab3e9}
+    textarea{
+      width:100%;min-height:130px;resize:vertical;background:#07102a;color:#dff0ff;
+      border:1px solid #3555a5;border-radius:10px;padding:10px;font-size:.94rem;
+    }
+    .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    button{
+      border:1px solid #3d60b8;background:#163378;color:#e0ebff;border-radius:10px;
+      padding:8px 11px;font-weight:700;cursor:pointer
+    }
+    button:hover{filter:brightness(1.08)}
+    button.s{background:#132344;border-color:#2b447e}
+    button.w{background:#5a3d0c;border-color:#8c661a}
+    button.d{background:#601425;border-color:#8f2c40}
+    .console{
+      margin-top:10px;min-height:90px;white-space:pre-wrap;
+      border:1px solid #2f4e99;border-radius:10px;background:#060f25;padding:10px
+    }
+    table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.84rem}
+    th,td{border:1px solid #2a478f;padding:5px;text-align:left}
+    th{background:#12275a}
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+    .shop-item{border:1px solid #2c4688;border-radius:10px;padding:8px;margin-bottom:8px;background:#0c1a3b}
+    .kpi{font-size:.83rem;color:#a9bff0}
+    .list{max-height:220px;overflow:auto}
+    @media (max-width:1100px){.layout{grid-template-columns:1fr}.missions{max-height:unset}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="title">🕶️ SQL Hacker Academy PRO</div>
+    <div class="stats">
+      <div class="pill">👤 Agente: <strong id="agent">NeoSQL</strong></div>
+      <div class="pill">🏅 Rango: <strong id="rank">Rookie</strong></div>
+      <div class="pill">⭐ Nivel: <strong id="level">1</strong></div>
+      <div class="pill">⚡ XP: <strong id="xp">0</strong></div>
+      <div class="pill">💰 Créditos: <strong id="coins">200</strong></div>
+      <div class="pill">🔥 Racha: <strong id="streak">0</strong> días</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="card missions" id="missionList"></div>
+
+    <div class="card">
+      <h3 id="mTitle">Selecciona misión</h3>
+      <p id="mStory">Tu objetivo es infiltrar sistemas con SQL.</p>
+      <p><strong>📚 Aprendizaje:</strong> <span id="mLearn">—</span></p>
+      <p><strong>🎯 Objetivo:</strong> <span id="mGoal">—</span></p>
+      <p class="small">Tablas disponibles: <code>users</code>, <code>orders</code></p>
+
+      <div id="schemaBox" class="small"></div>
+
+      <textarea id="sqlInput" placeholder="SELECT * FROM users;"></textarea>
+      <div class="btns">
+        <button onclick="runMission()">Ejecutar</button>
+        <button class="s" onclick="buyHint()">Pista (-40)</button>
+        <button class="w" onclick="buyExplain()">Explicación (-60)</button>
+        <button class="d" onclick="buySolve()">Resolver (-140)</button>
+        <button class="s" onclick="dailyBonus()">Bonus diario</button>
+      </div>
+
+      <div class="console" id="console">Sistema cargado. Selecciona una misión.</div>
+      <div id="resultTable"></div>
+    </div>
+
+    <div class="card">
+      <h3>🛒 Tienda & Progreso</h3>
+      <div class="shop-item"><div><strong>Pista</strong> desbloquea sugerencia.</div><div class="kpi">Costo: 40</div></div>
+      <div class="shop-item"><div><strong>Explicación</strong> mini clase del tema.</div><div class="kpi">Costo: 60</div></div>
+      <div class="shop-item"><div><strong>Resolver</strong> autocompleta query.</div><div class="kpi">Costo: 140</div></div>
+
+      <h3>🏆 Logros</h3>
+      <div id="achievements" class="list small"></div>
+
+      <h3>📊 Ranking local</h3>
+      <div id="ranking" class="list small"></div>
+
+      <div class="btns">
+        <button class="s" onclick="exportSave()">Exportar progreso</button>
+        <button class="s" onclick="importSave()">Importar progreso</button>
+        <button class="d" onclick="resetAll()">Reiniciar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/alasql@1.7/dist/alasql.min.js"></script>
+<script>
+const MISSIONS_PRO = [
+  // ===== CAP 1: FUNDAMENTOS (1-15) =====
+  ...Array.from({length:15}, (_,i)=>({
+    id:i+1, lvl:1+Math.floor(i/5),
+    title:`${String(i+1).padStart(3,"0")}. Fundamentos ${i+1}`,
+    learn:[
+      "SELECT básico","Columnas específicas","Alias AS","LIMIT","DISTINCT",
+      "WHERE texto","WHERE numérico","AND","OR","NOT",
+      "LIKE","IN","BETWEEN","IS NULL","IS NOT NULL"
+    ][i],
+    goal:"Completa la consulta solicitada para dominar la base de SQL.",
+    hint:"Lee el objetivo y usa SELECT ... FROM ... con la cláusula adecuada.",
+    exp:"Estas bases te permiten consultar datos correctamente antes de avanzar a análisis más complejos.",
+    solve:"SELECT * FROM users;",
+    reward:{xp:20 + i*2, coins:40 + i*2},
+    check:q=>/select/i.test(q)
+  })),
+
+  // ===== CAP 2: FILTROS/ORDEN (16-30) =====
+  ...Array.from({length:15}, (_,k)=>{
+    const i=k+16;
+    return {
+      id:i, lvl:4+Math.floor(k/5),
+      title:`${String(i).padStart(3,"0")}. Filtros y orden ${k+1}`,
+      learn:[
+        "ORDER BY ASC","ORDER BY DESC","ORDER múltiple","LIMIT + OFFSET","TOP N",
+        "Filtros combinados","Patrones LIKE","Fechas básicas","CASE simple","COALESCE",
+        "NULLIF","CAST","ROUND","LOWER/UPPER","TRIM"
+      ][k],
+      goal:"Construye consultas limpias, filtradas y ordenadas para escenarios reales.",
+      hint:"Empieza por FROM, luego WHERE, después ORDER BY y al final LIMIT/OFFSET.",
+      exp:"Dominar filtros y orden asegura reportes correctos y reproducibles.",
+      solve:"SELECT * FROM users ORDER BY id DESC LIMIT 5;",
+      reward:{xp:50 + k*2, coins:70 + k*3},
+      check:q=>/select/i.test(q)
+    }
+  }),
+
+  // ===== CAP 3: AGREGACIONES (31-45) =====
+  ...Array.from({length:15}, (_,k)=>{
+    const i=k+31;
+    return {
+      id:i, lvl:7+Math.floor(k/5),
+      title:`${String(i).padStart(3,"0")}. Agregaciones ${k+1}`,
+      learn:[
+        "COUNT","SUM","AVG","MIN/MAX","GROUP BY",
+        "HAVING","COUNT DISTINCT","Agregación condicional","Ratios","KPIs",
+        "Agregados por fecha","Totales acumulados intro","Pivot mental","Subtotales","Rollup concepto"
+      ][k],
+      goal:"Obtén métricas por segmentos y valida resultados agregados.",
+      hint:"Si agregas columnas, agrupa correctamente y usa HAVING para filtrar grupos.",
+      exp:"Las agregaciones son la base de la analítica y BI.",
+      solve:"SELECT country, COUNT(*) total FROM users GROUP BY country;",
+      reward:{xp:85 + k*3, coins:110 + k*3},
+      check:q=>/group\s+by|count|sum|avg/i.test(q)
+    }
+  }),
+
+  // ===== CAP 4: JOINS (46-60) =====
+  ...Array.from({length:15}, (_,k)=>{
+    const i=k+46;
+    return {
+      id:i, lvl:10+Math.floor(k/5),
+      title:`${String(i).padStart(3,"0")}. Joins ${k+1}`,
+      learn:[
+        "INNER JOIN","LEFT JOIN","RIGHT JOIN","FULL JOIN","SELF JOIN",
+        "JOIN múltiples tablas","JOIN + GROUP","JOIN + HAVING","Anti-join","Semi-join",
+        "Relaciones 1:N","Relaciones N:N","Errores comunes de JOIN","Duplicados por JOIN","Buenas prácticas"
+      ][k],
+      goal:"Relaciona correctamente entidades para obtener respuestas de negocio.",
+      hint:"Empieza por claves: tablaA.id = tablaB.foreign_id.",
+      exp:"JOIN bien hecho evita duplicados y errores de análisis.",
+      solve:"SELECT u.name, o.amount FROM users u JOIN orders o ON u.id=o.user_id;",
+      reward:{xp:130 + k*3, coins:150 + k*4},
+      check:q=>/join/i.test(q)
+    }
+  }),
+
+  // ===== CAP 5: SUBQUERIES & CTE (61-75) =====
+  ...Array.from({length:15}, (_,k)=>{
+    const i=k+61;
+    return {
+      id:i, lvl:13+Math.floor(k/5),
+      title:`${String(i).padStart(3,"0")}. Subqueries/CTE ${k+1}`,
+      learn:[
+        "Subquery en WHERE","Subquery en SELECT","Subquery en FROM","Correlated subquery","EXISTS",
+        "NOT EXISTS","IN vs EXISTS","CTE básico","CTE múltiples","CTE recursivo intro",
+        "Refactor con CTE","Debug de CTE","Rendimiento subquery","Lógica modular","Patrones avanzados"
+      ][k],
+      goal:"Resuelve lógica compleja de forma mantenible.",
+      hint:"Si la query crece, separa pasos con WITH.",
+      exp:"CTE y subconsultas te ayudan a diseñar SQL profesional.",
+      solve:"WITH x AS (SELECT * FROM users) SELECT * FROM x;",
+      reward:{xp:170 + k*3, coins:190 + k*4},
+      check:q=>/with|select.+\(.+select/i.test(q)
+    }
+  }),
+
+  // ===== CAP 6: FUNCIONES AVANZADAS (76-90) =====
+  ...Array.from({length:15}, (_,k)=>{
+    const i=k+76;
+    return {
+      id:i, lvl:16+Math.floor(k/5),
+      title:`${String(i).padStart(3,"0")}. Funciones avanzadas ${k+1}`,
+      learn:[
+        "Fechas","DATE_TRUNC","EXTRACT","Intervalos","Texto avanzado",
+        "Regex","JSON básico","JSON extracción","Arrays intro","Unnest intro",
+        "CASE avanzado","Funciones condicionales","Conversión tipos","Manejo NULL","Formato de salida"
+      ][k],
+      goal:"Domina funciones del motor SQL para datos reales.",
+      hint:"Lee documentación de funciones y prueba incrementalmente.",
+      exp:"En producción, funciones avanzadas son esenciales.",
+      solve:"SELECT CURRENT_DATE;",
+      reward:{xp:220 + k*3, coins:230 + k*4},
+      check:q=>/select/i.test(q)
+    }
+  }),
+
+  // ===== CAP 7: WINDOW FUNCTIONS (91-102) =====
+  ...Array.from({length:12}, (_,k)=>{
+    const i=k+91;
+    return {
+      id:i, lvl:19+Math.floor(k/4),
+      title:`${String(i).padStart(3,"0")}. Window ${k+1}`,
+      learn:[
+        "OVER()","ROW_NUMBER","RANK","DENSE_RANK",
+        "PARTITION BY","Running total","LAG","LEAD",
+        "FIRST_VALUE","LAST_VALUE","Percentiles","Frames avanzados"
+      ][k],
+      goal:"Construye análisis temporal y rankings expertos.",
+      hint:"Piensa en ventana: OVER (PARTITION BY ... ORDER BY ...).",
+      exp:"Window functions separan nivel intermedio de experto.",
+      solve:"SELECT name, ROW_NUMBER() OVER (ORDER BY spend DESC) rn FROM users;",
+      reward:{xp:280 + k*4, coins:280 + k*5},
+      check:q=>/over\s*\(/i.test(q)
+    }
+  }),
+
+  // ===== CAP 8: DDL/DML & MODELADO (103-110) =====
+  ...Array.from({length:8}, (_,k)=>{
+    const i=k+103;
+    return {
+      id:i, lvl:22+Math.floor(k/4),
+      title:`${String(i).padStart(3,"0")}. Modelado ${k+1}`,
+      learn:[
+        "CREATE TABLE","ALTER TABLE","Constraints PK/FK","INSERT",
+        "UPDATE","DELETE","Transacciones","Normalización"
+      ][k],
+      goal:"Diseña y manipula datos con seguridad.",
+      hint:"Aplica integridad referencial y cambios controlados.",
+      exp:"No solo consultas: un experto entiende estructura.",
+      solve:"CREATE TABLE demo(id INT, name TEXT);",
+      reward:{xp:340 + k*5, coins:320 + k*5},
+      check:q=>/create|alter|insert|update|delete|transaction|begin|commit/i.test(q)
+    }
+  }),
+
+  // ===== CAP 9: OPTIMIZACIÓN (111-116) =====
+  ...Array.from({length:6}, (_,k)=>{
+    const i=k+111;
+    return {
+      id:i, lvl:24+Math.floor(k/3),
+      title:`${String(i).padStart(3,"0")}. Performance ${k+1}`,
+      learn:[
+        "EXPLAIN","Índices","Index scan vs seq scan",
+        "Reescritura de queries","Costos","Optimización práctica"
+      ][k],
+      goal:"Mejora rendimiento y tiempos de respuesta.",
+      hint:"Analiza plan antes de optimizar.",
+      exp:"Performance te convierte en perfil senior.",
+      solve:"EXPLAIN SELECT * FROM users;",
+      reward:{xp:420 + k*6, coins:400 + k*6},
+      check:q=>/explain|index|analyze/i.test(q)
+    }
+  }),
+
+  // ===== CAP 10: RETOS FINALES (117-120) =====
+  ...Array.from({length:4}, (_,k)=>{
+    const i=k+117;
+    return {
+      id:i, lvl:27+k,
+      title:`${String(i).padStart(3,"0")}. Reto experto ${k+1}`,
+      learn:[
+        "Dashboard SQL completo","Cohorts y retención","Embudo de conversión","Capstone final"
+      ][k],
+      goal:"Resolver caso real de negocio de punta a punta.",
+      hint:"Divide en CTEs, valida cada bloque y optimiza al final.",
+      exp:"Aquí integras todo: modelado, análisis, performance y claridad.",
+      solve:"WITH base AS (SELECT * FROM users) SELECT * FROM base;",
+      reward:{xp:700 + k*100, coins:650 + k*100},
+      check:q=>/select|with|join|group|over/i.test(q)
+    }
+  })
+];
+const missions = MISSIONS_PRO;
+const initState = {
+  agent:"NeoSQL", level:1, xp:0, coins:200, rank:"Rookie",
+  streak:0, lastDaily:null, active:1, completed:[], achievements:[]
+};
+const state = JSON.parse(localStorage.getItem("sqlProState") || "null") || structuredClone(initState);
+
+function save(){ localStorage.setItem("sqlProState", JSON.stringify(state)); renderAll(); }
+const $ = id=>document.getElementById(id);
+
+function setupDB(){
+  alasql("DROP TABLE IF EXISTS users");
+  alasql("DROP TABLE IF EXISTS orders");
+  alasql("CREATE TABLE users (id INT, name STRING, country STRING, age INT, spend INT)");
+  alasql("CREATE TABLE orders (id INT, user_id INT, amount INT, order_date STRING)");
+  alasql("INSERT INTO users VALUES (1,'Ana','MX',21,120),(2,'Luis','ES',34,430),(3,'Mia','CO',19,80),(4,'Noah','MX',42,560),(5,'Sofia','AR',29,300),(6,'Ethan','MX',26,220),(7,'Emma','ES',31,150),(8,'Leo','CO',24,410),(9,'Liam','PE',37,90)");
+  alasql("INSERT INTO orders VALUES (1,1,120,'2024-01-04'),(2,2,280,'2024-01-09'),(3,4,320,'2024-01-10'),(4,4,260,'2024-02-10'),(5,5,110,'2024-01-20'),(6,8,410,'2024-01-25'),(7,2,200,'2024-02-02'),(8,6,140,'2024-01-30'),(9,7,50,'2024-03-01')");
+}
+
+function rankByLevel(l){ if(l<3)return"Rookie"; if(l<5)return"Operador"; if(l<7)return"Analista"; if(l<9)return"Arquitecto"; return"Maestro SQL"; }
+
+function renderMissions(){
+  const box = $("missionList");
+  box.innerHTML = "<h3>🗺️ Misiones</h3>";
+  missions.forEach(m=>{
+    const unlocked = m.id===1 || state.completed.includes(m.id-1);
+    const done = state.completed.includes(m.id);
+    const d=document.createElement("div");
+    d.className=`mission ${state.active===m.id?'active':''} ${unlocked?'':'locked'}`;
+    d.innerHTML = `<div class="row"><strong>${m.title}</strong><span class="tag">Lvl ${m.lvl}</span></div>
+                   <div class="small">${m.learn}</div>
+                   <div class="${done?'ok':'small'}">${done?'✔ Completada':'Pendiente'}</div>`;
+    d.onclick=()=>{ if(!unlocked)return log("🔒 Misión bloqueada","warn"); state.active=m.id; save(); };
+    box.appendChild(d);
+  });
+}
+
+function renderMissionDetail(){
+  const m=missions.find(x=>x.id===state.active);
+  $("mTitle").textContent=m.title;
+  $("mLearn").textContent=m.learn;
+  $("mGoal").textContent=m.goal;
+  $("mStory").textContent="Canal seguro abierto. Ejecuta SQL sin dejar rastro.";
+  $("schemaBox").innerHTML=`<code>users(id,name,country,age,spend)</code><br/><code>orders(id,user_id,amount,order_date)</code>`;
+}
+
+function renderStats(){
+  state.rank=rankByLevel(state.level);
+  $("agent").textContent=state.agent; $("rank").textContent=state.rank; $("level").textContent=state.level;
+  $("xp").textContent=state.xp; $("coins").textContent=state.coins; $("streak").textContent=state.streak;
+}
+
+function log(msg,cls=""){ $("console").innerHTML=`<span class="${cls}">${msg}</span>`; }
+
+function spend(n){ if(state.coins<n){log("💸 Créditos insuficientes","warn"); return false;} state.coins-=n; save(); return true; }
+
+function grant(m){
+  if(state.completed.includes(m.id)) return;
+  state.completed.push(m.id);
+  state.xp += m.reward.xp;
+  state.coins += m.reward.coins;
+  state.level = Math.floor(state.xp/80)+1;
+  checkAchievements();
+  save();
+}
+
+function tableFromRows(rows){
+  if(!rows || !rows.length) return "<p class='small'>Sin filas para mostrar.</p>";
+  const cols = Object.keys(rows[0]);
+  let h="<table><tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr>";
+  rows.slice(0,15).forEach(r=> h += "<tr>"+cols.map(c=>`<td>${r[c]}</td>`).join("")+"</tr>");
+  return h+"</table>";
+}
+
+function runMission(){
+  const m=missions.find(x=>x.id===state.active);
+  const q=$("sqlInput").value.trim();
+  if(!q) return log("Escribe una consulta SQL");
+  try{
+    const res=alasql(q);
+    $("resultTable").innerHTML = Array.isArray(res) ? tableFromRows(res) : `<p class="small">Resultado: ${JSON.stringify(res)}</p>`;
+    if(m.check(q)){
+      grant(m);
+      log(`✅ Misión completada. +${m.reward.xp} XP, +${m.reward.coins} créditos`,"ok");
+    }else{
+      log("⚠ Query ejecutó, pero no cumple el objetivo exacto de la misión.","warn");
+    }
+  }catch(e){
+    log("❌ Error SQL: "+e.message,"bad");
+  }
+}
+
+function buyHint(){ const m=missions.find(x=>x.id===state.active); if(!spend(40))return; log("🧩 "+m.hint,"warn"); }
+function buyExplain(){ const m=missions.find(x=>x.id===state.active); if(!spend(60))return; log("📘 "+m.exp,"warn"); }
+function buySolve(){ const m=missions.find(x=>x.id===state.active); if(!spend(140))return; $("sqlInput").value=m.solve; log("🤖 Solución cargada.","warn"); }
+
+function dailyBonus(){
+  const today = new Date().toISOString().slice(0,10);
+  if(state.lastDaily===today) return log("Ya reclamaste bonus hoy.","warn");
+  const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+  state.streak = (state.lastDaily===yesterday) ? state.streak+1 : 1;
+  state.lastDaily=today;
+  const reward = 40 + Math.min(state.streak*10,100);
+  state.coins += reward; state.xp += 10;
+  checkAchievements();
+  save();
+  log(`🎁 Bonus diario +${reward} créditos. Racha: ${state.streak}`,"ok");
+}
+
+function checkAchievements(){
+  const a = state.achievements;
+  const add=(k,t)=>{ if(!a.find(x=>x.k===k)) a.push({k,t,at:new Date().toLocaleString()}); };
+  if(state.completed.length>=1) add("first","Primer acceso");
+  if(state.completed.length>=5) add("m5","5 misiones completadas");
+  if(state.completed.length>=10) add("m10","10 misiones completadas");
+  if(state.completed.length>=20) add("m20","Campaña PRO completada");
+  if(state.streak>=3) add("st3","Racha de 3 días");
+  if(state.level>=5) add("lv5","Nivel 5 alcanzado");
+}
+
+function renderAchievements(){
+  const box=$("achievements");
+  if(!state.achievements.length) return box.innerHTML="<div>Sin logros aún.</div>";
+  box.innerHTML = state.achievements.map(x=>`<div>🏅 ${x.t}<br><span class="kpi">${x.at}</span></div><hr style="border-color:#223a75">`).join("");
+}
+
+function renderRanking(){
+  // Ranking demo local
+  const bots=[
+    {n:"ByteRunner",xp:420},{n:"RootQueen",xp:760},{n:"NullHunter",xp:530},{n:state.agent,xp:state.xp}
+  ].sort((a,b)=>b.xp-a.xp);
+  $("ranking").innerHTML = bots.map((x,i)=>`${i+1}. ${x.n} — ${x.xp} XP`).join("<br>");
+}
+
+function exportSave(){
+  const data = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+  prompt("Copia tu progreso (backup):", data);
+}
+function importSave(){
+  const data = prompt("Pega tu backup:");
+  if(!data) return;
+  try{
+    const obj = JSON.parse(decodeURIComponent(escape(atob(data))));
+    localStorage.setItem("sqlProState", JSON.stringify(obj));
+    location.reload();
+  }catch{ alert("Backup inválido"); }
+}
+function resetAll(){ if(confirm("¿Seguro?")){ localStorage.removeItem("sqlProState"); location.reload(); } }
+
+function renderAll(){ renderStats(); renderMissions(); renderMissionDetail(); renderAchievements(); renderRanking(); }
+
+setupDB();
+checkAchievements();
+renderAll();
+log("Sistema listo. Ejecuta SQL y sube de rango.");
+</script>
+</body>
+</html>
